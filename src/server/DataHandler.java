@@ -8,7 +8,8 @@ import java.util.*;
 
 public class DataHandler {
 
-  private static ArrayList<String> fileData;
+  // private static ArrayList<String> fileData;
+  private static String fileData;
   private static String FILE_PATH = "data.json";
 
 
@@ -20,14 +21,14 @@ public class DataHandler {
   /*
     Read a file
    */
-  private ArrayList<String> prepData() throws IOException {
-    ArrayList<String> data = new ArrayList<String>();
+  private String prepData() throws IOException {
+    String data = "";
     ClassLoader classloader = Thread.currentThread().getContextClassLoader();
     InputStream inputStream = classloader.getResourceAsStream(FILE_PATH);
     InputStreamReader streamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
     BufferedReader reader = new BufferedReader(streamReader);
     for (String line; (line = reader.readLine()) != null;) {
-      data.add(line);
+      data += line;
     }
     return data;
   }
@@ -42,7 +43,8 @@ public class DataHandler {
     String data = "";
     switch (requestParameter) {
       case "/":
-        data = fileData.get(0);
+        // data = fileData.get(0); // TODO: need to serialize
+        data = fileData;
         break;
       case "/favicon.ico":
         data += Http.NOT_IMPLEMENTED;

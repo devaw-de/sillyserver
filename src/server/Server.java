@@ -57,7 +57,7 @@ public class Server extends Thread {
       return socket;
     }
     catch (SocketException e) {
-      return null;
+      return null; // hacky, but seems to work
     }
 
   }
