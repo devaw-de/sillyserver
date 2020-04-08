@@ -4,7 +4,6 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.URISyntaxException;
 
 
 public class Server extends Thread {
@@ -16,17 +15,17 @@ public class Server extends Thread {
   private DataHandler dataHandler;
 
 
-  public Server(int p) throws IOException, URISyntaxException {
-    this.port = p;
+  public Server(int p) throws IOException {
+    Server.port = p;
     this.dataHandler = new DataHandler();
     this.startServer();
   }
 
 
   private void startServer() throws IOException {
-    System.out.println("Starting server at localhost:" + this.port);
+    System.out.println("Starting server at localhost:" + Server.port);
     System.out.println("Press CTRL+C to stop");
-    this.serverSocket = new ServerSocket(this.port);
+    this.serverSocket = new ServerSocket(Server.port);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -52,7 +51,7 @@ public class Server extends Thread {
 
   private Socket waitForRequest() throws IOException {
     try {
-      Socket socket = this.serverSocket.accept();
+      Socket socket = Server.serverSocket.accept();
       System.out.println("Client connection established");
       return socket;
     }
@@ -64,18 +63,26 @@ public class Server extends Thread {
 
 
   private String readRequest() throws IOException {
-    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
-    char[] buffer = new char[1000];
-    int requestLength = bufferedReader.read(buffer, 0, 1000);
-    String message = new String(buffer, 0, requestLength);
-    return message;
+    if(this.clientSocket != null) {
+      BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
+      char[] buffer = new char[1000];
+      int requestLength = bufferedReader.read(buffer, 0, 1000);
+      String message = new String(buffer, 0, requestLength);
+      return message;
+    }
+    else {
+      return "GET /"; // Dummy-String for parseRequest(), so calculateReply() does not throw an ArrayOutOfBoundException
+    }
+
   }
 
 
   /*
+    Split the request headers into a String-Array
     Ignore all headers except for the first line of the HTTP Request
+    e.g. "GET /something"
   */
-  private String[] parseRequest(String request) throws IOException {
+  private String[] parseRequest(String request) {
     String line = request.split("\n")[0];
     String[] requestLine = line.split(" ");
     System.out.println("Request: " + requestLine[0] + " " + requestLine[1]);
@@ -90,7 +97,6 @@ public class Server extends Thread {
         break;
       case Http.METHOD_POST:
         this.sendReply(Http.NOT_IMPLEMENTED);
-        break;
       case Http.METHOD_PUT:
         this.sendReply(Http.NOT_IMPLEMENTED);
       case Http.METHOD_DELETE:

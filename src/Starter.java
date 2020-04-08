@@ -1,10 +1,9 @@
 import server.Server;
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 public class Starter {
 
-  public static void main(String[] args) throws IOException, URISyntaxException {
+  public static void main(String[] args) throws IOException {
     int port;
 
     try {
