@@ -9,7 +9,7 @@ import java.util.*;
 public class DataHandler {
 
   private static ArrayList<String> fileData;
-  private static String FILE_PATH = "/src/data.json";
+  private static String FILE_PATH = "data.json";
 
 
   public DataHandler() throws IOException {

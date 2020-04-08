@@ -3,6 +3,7 @@ package server;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.URISyntaxException;
 
 
@@ -27,19 +28,19 @@ public class Server extends Thread {
     System.out.println("Press CTRL+C to stop");
     this.serverSocket = new ServerSocket(this.port);
 
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
+      public void run() {
+        try {
+          serverSocket.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+        System.out.println("Quitting. Bye.");
+      }
+    });
 
     while (true) {
-      Runtime.getRuntime().addShutdownHook(new Thread() {
-        @Override
-        public void run() {
-          try {
-            serverSocket.close();
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-          System.out.println("Quitting. Bye.");
-        }
-      });
       this.clientSocket = this.waitForRequest();
       String[] parsedRequest = this.parseRequest(this.readRequest());
       this.calculateReply(parsedRequest);
@@ -50,9 +51,15 @@ public class Server extends Thread {
 
 
   private Socket waitForRequest() throws IOException {
-    Socket socket = this.serverSocket.accept();
-    System.out.println("Client connection established");
-    return socket;
+    try {
+      Socket socket = this.serverSocket.accept();
+      System.out.println("Client connection established");
+      return socket;
+    }
+    catch (SocketException e) {
+      return null;
+    }
+
   }
 
 
