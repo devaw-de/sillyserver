@@ -24,9 +24,9 @@ public class Http {
   static final int FORBIDDEN = 403;
   static final int NOT_FOUND = 404;
   static final int METHOD_NOT_ALLOWED = 405;
-  public static final int I_AM_A_TEAPOT = 418;
+  static final int I_AM_A_TEAPOT = 418;
   // Status Codes 500..
-  public static final int INTERNAL_SERVER_ERROR = 500;
+  static final int INTERNAL_SERVER_ERROR = 500;
   static final int NOT_IMPLEMENTED = 501;
   // Methods
   static final String METHOD_DELETE = "DELETE";
