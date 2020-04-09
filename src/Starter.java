@@ -18,7 +18,7 @@ public class Starter {
       System.out.println("No port selected. Switching to default port.");
     }
 
-    if(port < 1000 || port > 65534) {
+    if(port < 1000 || port > 65535) {
       port = Server.DEFAULT_PORT_NUMBER;
       System.out.println("Illegal port detected. Please try ports above 1000.");
     }
