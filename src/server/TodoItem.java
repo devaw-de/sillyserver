@@ -7,8 +7,8 @@ class TodoItem {
   private String title;
   private boolean completed;
 
-  TodoItem(int id, int userId, String title, boolean completed) {
-    this.id = id;
+  TodoItem(int userId, String title, boolean completed) {
+    this.id = 0;
     this.userId = userId;
     this.title = title;
     this.completed = completed;
@@ -17,4 +17,5 @@ class TodoItem {
   void toggleCompleted() {
     this.completed = !this.completed;
   }
+
 }

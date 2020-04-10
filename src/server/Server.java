@@ -12,13 +12,12 @@ public class Server extends Thread {
   private static int port;
   private static ServerSocket serverSocket;
   private Socket clientSocket;
-  private DataHandler dataHandler;
-  private String[] request;
+  private String request;
 
 
   public Server(int p) throws IOException {
     Server.port = p;
-    this.dataHandler = new DataHandler();
+    DataHandler.init();
     this.startServer();
   }
 
@@ -40,7 +39,8 @@ public class Server extends Thread {
 
     while (true) {
       this.clientSocket = this.waitForRequest();
-      String[] parsedRequest = this.parseRequest(this.readRequest());
+      this.request = this.readRequest();
+      String[] parsedRequest = this.parseRequest(this.request);
       String[] response = this.calculateReply(parsedRequest);
       this.sendResponse(response);
       if(this.clientSocket != null) {
@@ -94,6 +94,17 @@ public class Server extends Thread {
 
 
   /*
+    Get the body of a request
+    The HTTP specifications demand an empty line after the headers, thus splitting body and headers by 2 CRLF.
+   */
+  private String getRequestBody(String request) {
+     String[] body = request.split("\r\n\r\n");
+     if(body.length == 2) return body[1];
+     return "";
+  }
+
+
+  /*
     Get HTTP-Status-Code and content for response;
    */
   private String[] calculateReply(String[] request) {
@@ -115,6 +126,7 @@ public class Server extends Thread {
       else requestId = 0;
 
       switch (requestMethod) {
+        // ## GET ##
         case Http.METHOD_GET:
           responseBody = requestId == 0 ? DataHandler.get() : DataHandler.get(requestId);
           if(responseBody.equals("")) {
@@ -125,15 +137,29 @@ public class Server extends Thread {
             responseCode = Http.OK;
           }
           break;
+        // ## PUT ##
         case Http.METHOD_PUT:
           responseCode = DataHandler.put(requestId) ? Http.OK : Http.FORBIDDEN;
           break;
+        // ## POST ##
         case Http.METHOD_POST:
-          responseCode = Http.NOT_IMPLEMENTED;
+          if(requestParameter.equals("")) {
+            String body = this.getRequestBody(this.request);
+            int insertId = body.equals("") ? 0 : DataHandler.post(body);
+            responseCode = insertId > 0 ? Http.CREATED : Http.INTERNAL_SERVER_ERROR;
+            if(responseCode.equals(Http.CREATED)) {
+              responseBody = DataHandler.get(insertId - 1);
+            }
+          }
+          else {
+            responseCode = Http.BAD_REQUEST;
+          }
           break;
+        // ## DELETE ##
         case Http.METHOD_DELETE:
           responseCode = DataHandler.delete(requestId) ? Http.OK : Http.NOT_FOUND;
           break;
+        // ## OPTIONS ##
         case Http.METHOD_OPTIONS:
           responseCode = Http.OK;
           responseBody = Http.ALLOWED_METHODS;

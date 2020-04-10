@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 
@@ -16,9 +15,9 @@ class DataHandler {
   private static List<TodoItem> list;
 
 
-  DataHandler() throws IOException {
+  static void init() throws IOException {
     DataHandler.gson = new Gson();
-    DataHandler.fileData = DataHandler. this.prepData();
+    DataHandler.fileData = DataHandler.prepData();
     DataHandler.list = gson.fromJson(fileData, new TypeToken<List<TodoItem>>() {}.getType());
   }
 
@@ -26,7 +25,7 @@ class DataHandler {
   /*
     Read the file
    */
-  private String prepData() throws IOException {
+  private static String prepData() throws IOException {
     String data = "";
     ClassLoader classloader = Thread.currentThread().getContextClassLoader();
     InputStream inputStream = classloader.getResourceAsStream(FILE_PATH);
@@ -48,8 +47,8 @@ class DataHandler {
     Determine data to be sent in response to a GET request
    */
   static String get(int id) {
-    String data;
     // Get a single Item
+    String data;
     if(id > 0 && id < list.size()) {
       data = gson.toJson(list.get(id));
     }
@@ -67,8 +66,16 @@ class DataHandler {
   /*
     Determine data to be sent in response to a POST request
    */
-  static String post(String requestParameter) {
-    return "" + Http.METHOD_NOT_ALLOWED;
+  static int post(String body) {
+    try {
+      TodoItem item = parseRequestBody(body);
+      list.add(item);
+      return list.size();
+    }
+    catch(IndexOutOfBoundsException e) {
+      System.out.println("Failed to create item");
+    }
+    return 0;
   }
 
 
@@ -101,6 +108,16 @@ class DataHandler {
       System.out.println("Failed to delete item #" + id);
     }
     return false;
+  }
+
+
+  /*
+    Parse a request's body.
+    Excepts the body to consist of a single json object
+   */
+  static TodoItem parseRequestBody(String body) {
+    TodoItem item = gson.fromJson(body, TodoItem.class);
+    return item;
   }
 
 
