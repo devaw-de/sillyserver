@@ -13,4 +13,8 @@ class TodoItem {
     this.title = title;
     this.completed = completed;
   }
+
+  void toggleCompleted() {
+    this.completed = !this.completed;
+  }
 }

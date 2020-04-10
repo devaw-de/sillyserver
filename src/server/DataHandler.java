@@ -31,7 +31,7 @@ class DataHandler {
     ClassLoader classloader = Thread.currentThread().getContextClassLoader();
     InputStream inputStream = classloader.getResourceAsStream(FILE_PATH);
     if(inputStream != null) {
-      InputStreamReader streamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+      InputStreamReader streamReader = new InputStreamReader(inputStream, Http.CHARSET);
       BufferedReader reader = new BufferedReader(streamReader);
       for (String line; (line = reader.readLine()) != null; ) {
         data += line;
@@ -47,31 +47,20 @@ class DataHandler {
   /*
     Determine data to be sent in response to a GET request
    */
-  static String get(String requestParameter) {
+  static String get(int id) {
     String data;
-    if (requestParameter.equals("/")) {
-      // Reply with the entire list
-      data = gson.toJson(list);
-    }
-    else if(requestParameter.equals("/favicon.ico")) {
-      // catch the favicon-request browsers tend to send
-      data = "" + Http.NOT_IMPLEMENTED;
-    }
-    else if(requestParameter.matches("/\\d+")) {
-      // Reply with a single item
-      String trimmedParameter = requestParameter.replaceFirst("/", "");
-      int id = Integer.parseInt(trimmedParameter) - 1;
-      if(id > 0 && id < list.size()) {
-        data = gson.toJson(list.get(id));
-      }
-      else {
-        data = "" + Http.NOT_FOUND;
-      }
+    // Get a single Item
+    if(id > 0 && id < list.size()) {
+      data = gson.toJson(list.get(id));
     }
     else {
-      data = "" + Http.BAD_REQUEST;
+      data = "0";
     }
     return data;
+  }
+  static String get() {
+    // Get all items
+    return gson.toJson(list);
   }
 
 
@@ -84,18 +73,35 @@ class DataHandler {
 
 
   /*
-    Determine data to be sent in response to a PUT request
+    Determine whether a PUT request can be fulfilled;
+    Toggle the field if possible
    */
-  static String put(String requestParameter) {
-    return "" + Http.METHOD_NOT_ALLOWED;
+  static boolean put(int id) {
+    try {
+      DataHandler.list.get(id).toggleCompleted();
+      return true;
+    }
+    catch (IndexOutOfBoundsException e) {
+      System.out.println("Failed to update item #" + id);
+    }
+    return false;
   }
 
 
   /*
-    Determine data to be sent in response to a DELETE request
+    Determine whether a DELETE request can be fulfilled;
+    Delete the item if possible
    */
-  static String delete(String requestParameter) {
-    return "" + Http.METHOD_NOT_ALLOWED;
+  static boolean delete(int id) {
+    try {
+      list.remove(id);
+      return true;
+    }
+    catch(IndexOutOfBoundsException e) {
+      System.out.println("Failed to delete item #" + id);
+    }
+    return false;
   }
+
 
 }

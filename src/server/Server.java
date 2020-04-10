@@ -13,8 +13,7 @@ public class Server extends Thread {
   private static ServerSocket serverSocket;
   private Socket clientSocket;
   private DataHandler dataHandler;
-  private int responseStatus;
-  private String responseContent;
+  private String[] request;
 
 
   public Server(int p) throws IOException {
@@ -32,7 +31,8 @@ public class Server extends Thread {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       try {
         serverSocket.close();
-      } catch (IOException e) {
+      }
+      catch (IOException e) {
         e.printStackTrace();
       }
       System.out.println("Quitting. Bye.");
@@ -41,8 +41,8 @@ public class Server extends Thread {
     while (true) {
       this.clientSocket = this.waitForRequest();
       String[] parsedRequest = this.parseRequest(this.readRequest());
-      this.calculateReply(parsedRequest);
-      this.sendReply();
+      String[] response = this.calculateReply(parsedRequest);
+      this.sendResponse(response);
       if(this.clientSocket != null) {
         this.clientSocket.close();
       }
@@ -96,39 +96,65 @@ public class Server extends Thread {
   /*
     Get HTTP-Status-Code and content for response;
    */
-  private void calculateReply(String[] request) {
-    this.responseStatus = Http.OK;
-    this.responseContent = "";
-    switch (request[0]) {
-      case Http.METHOD_GET:
-        this.responseContent = DataHandler.get(request[1]);
-        if(this.responseContent.trim().equals("") || this.responseContent.trim().equals(""+Http.NOT_FOUND)) {
-          this.responseStatus = Http.NOT_FOUND;
-        }
-        break;
-      case Http.METHOD_POST:
-      case Http.METHOD_PUT:
-      case Http.METHOD_DELETE:
-        this.responseStatus = Http.NOT_IMPLEMENTED;
-        break;
-      case Http.METHOD_OPTIONS:
-        this.responseContent = Http.ALLOWED_METHODS;
-        break;
-      default:
-        this.responseStatus = Http.METHOD_NOT_ALLOWED;
-        this.responseContent = Http.ALLOWED_METHODS;
-        break;
+  private String[] calculateReply(String[] request) {
+    String responseBody = Http.EMPTY_RESPONSE;
+    String responseCode = Http.NOT_IMPLEMENTED;
+    int requestId;
+
+    String requestMethod = request[0];
+    String requestParameter = request[1].replaceFirst("/", "");
+
+    // If a request parameter is malformed, i.e. non-numeric, we already know the response
+    if (!requestParameter.matches("\\d+") && !requestParameter.equals("")) {
+      responseCode = Http.BAD_REQUEST;
+    } else {
+      // Only now checking the full request becomes necessary
+      if(!requestParameter.equals("")) {
+        requestId = Integer.parseInt(requestParameter) - 1;
+      }
+      else requestId = 0;
+
+      switch (requestMethod) {
+        case Http.METHOD_GET:
+          responseBody = requestId == 0 ? DataHandler.get() : DataHandler.get(requestId);
+          if(responseBody.equals("")) {
+            responseCode = Http.NOT_FOUND;
+            responseBody = Http.EMPTY_RESPONSE;
+          }
+          else {
+            responseCode = Http.OK;
+          }
+          break;
+        case Http.METHOD_PUT:
+          responseCode = DataHandler.put(requestId) ? Http.OK : Http.FORBIDDEN;
+          break;
+        case Http.METHOD_POST:
+          responseCode = Http.NOT_IMPLEMENTED;
+          break;
+        case Http.METHOD_DELETE:
+          responseCode = DataHandler.delete(requestId) ? Http.OK : Http.NOT_FOUND;
+          break;
+        case Http.METHOD_OPTIONS:
+          responseCode = Http.OK;
+          responseBody = Http.ALLOWED_METHODS;
+          break;
+        default:
+          responseCode = Http.METHOD_NOT_ALLOWED;
+          responseBody = Http.EMPTY_RESPONSE;
+          break;
+      }
     }
-    System.out.println("ResponseCode: " + this.responseStatus);
+    System.out.println("ResponseCode: " + responseCode);
+    return new String[] {responseCode, responseBody};
   }
 
 
   /*
     Send Response to client
    */
-  private void sendReply() throws IOException {
-    String httpResponse = Http.getDefaultHeaders(this.responseStatus);
-    httpResponse += this.responseContent;
+  private void sendResponse(String[] response) throws IOException {
+    String httpResponse = Http.getHeaders(response[0]);
+    httpResponse += response[1];
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(this.clientSocket.getOutputStream()));
     printWriter.print(httpResponse);
     printWriter.flush();
